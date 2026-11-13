@@ -1,6 +1,6 @@
 {
   "name": "mont-forge-pipeline",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mont Forge 开发流水线：把 45 个工程技能编排成覆盖 spec→plan→build→verify→review→ship 全流程的 9 个可调用工具。",
   "license": "MIT",
   "author": {
