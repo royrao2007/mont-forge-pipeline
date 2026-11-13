@@ -4,6 +4,37 @@
 
 > 合并自 [`addyosmani/agent-skills`](https://github.com/addyosmani/agent-skills)（25 个）与 [`mattpocock/skills`](https://github.com/mattpocock/skills)（19 个），均 MIT。归因见 [NOTICE.md](NOTICE.md)。
 
+## 快速开始
+
+**安装**（DSH 界面最稳，不依赖命令行）：
+
+> DSH → **插件** → **添加插件** → 填 `mont-forge-pipeline`
+
+命令行方式（`dsh` 可用时）：
+
+```powershell
+dsh plugin --profile <profile> add mont-forge-pipeline
+```
+
+或从 GitHub：[`git clone` 后装目录](https://github.com/royrao2007/mont-forge-pipeline)。
+
+**验证**（新开会话后）：
+
+```
+forge_catalog
+```
+
+看到六个阶段、九个工具和 45 个技能清单，就是装好了。
+
+**用起来**：
+
+```
+forge_assess({ "path": "<你的项目>" })   # 先体检
+forge_spec                               # 然后按阶段推进
+```
+
+完整安装方式（界面 / npm / GitHub / 本地目录 / 卸载）见下方 [安装](#安装) 章节。
+
 ## 为什么合并
 
 技能是「说明书」，工具是「工位」：
@@ -64,37 +95,134 @@
 
 ## 安装
 
-### DSH
+本包是标准 npm 包 + DSH bundle，三种装法按你的环境挑一个。
+
+### 方式一：从 npm 装到 DSH（有 CLI 时最省事）
 
 ```powershell
-# 从 npm
 dsh plugin --profile <profile> add mont-forge-pipeline
+```
 
-# 从本地目录
+`<profile>` 常见值：`desktop`（桌面端）、`web`、`headless`。不确定就跑 `echo $env:DSH_PROFILE`。
+
+国内网络慢可指定镜像（同步有延迟，装不到新版就等几分钟或换官方源）：
+
+```powershell
+dsh plugin --profile <profile> add mont-forge-pipeline --registry https://registry.npmmirror.com
+```
+
+> ⚠️ `dsh` 命令来自 DSH 桌面端/CLI 的**当前版本**。如果 `dsh plugin --help` 报
+> `The system cannot find the path specified`，说明你的 `dsh.cmd` 还指向旧版本安装目录
+> （常见于桌面端升级后），此时用下面的方式二或方式四。
+
+### 方式二：DSH 界面安装（不依赖命令行）
+
+1. 打开 DSH → **插件**（Plugins）
+2. 点 **添加插件**
+3. 填包名 `mont-forge-pipeline`（从 npm 装）
+   或点选目录（从本地克隆装，见方式四）
+4. 安装完成后**新开一个会话** —— 工具列表在会话启动时快照，旧会话看不到新工具
+
+### 方式三：从 GitHub 安装
+
+```powershell
+# 1) 克隆
+git clone https://github.com/royrao2007/mont-forge-pipeline.git
+cd mont-forge-pipeline
+
+# 2) 装进 DSH（有 CLI 时）
+dsh plugin --profile <profile> add .
+
+# 3) 没有 CLI 时：在 DSH「插件 → 添加插件」里选择这个克隆出来的目录
+```
+
+指定分支或 tag（例如发布版）：
+
+```powershell
+git clone --branch v0.2.0 --depth 1 https://github.com/royrao2007/mont-forge-pipeline.git
+```
+
+**装 GitHub 版而不是 npm 版的情况**：想紧跟 `main` 的最新改动、要改代码、或 npm 镜像还没同步到新版。
+
+### 方式四：从本地目录安装（开发 / 改代码用）
+
+```powershell
 dsh plugin --profile <profile> add "F:\path\to\mont-forge-pipeline"
 ```
 
-或在 DSH「插件 → 添加插件」选择目录 / 填包名。
+或在「插件 → 添加插件」里选这个目录。
+
+改完代码要让 DSH 重新加载：桌面端重启一次最稳（插件的 JS 模块在首次挂载时已载入，重启才会重新 import）。
+
+### 安装后怎么确认成功
+
+**1. 看插件是否加载**——DSH「插件」列表里有 `Mont Forge`。
+
+**2. 看工具是否可用**——新会话里问：
+
+```
+forge_catalog
+```
+
+应返回六个阶段（spec / plan / build / verify / review / ship）、九个工具，以及 45 个技能的清单。
+
+**3. 看技能是否可用**——说「用 mont-forge 评估下这个项目」，或直接：
+
+```
+forge_skill({ "name": "code-review-and-quality" })
+```
+
+应返回该技能的完整正文（约 21 KB）。
+
+**4. 最小自检**——跑一次真实扫描：
+
+```
+forge_assess({ "path": "<你的项目目录>" })
+```
+
+应返回文件数、技术栈、测试/CI/文档/锁文件等工程信号。
+
+### 卸载
+
+```powershell
+dsh plugin --profile <profile> remove mont-forge-pipeline
+```
+
+或在 DSH「插件」里停用/移除。
+
+卸载后 `%DSH_HOME%\profiles\<profile>\node_modules\mont-forge-pipeline` 可能残留
+（尤其是本地目录安装的 junction），手动删掉即可，不影响其他插件。
 
 ### 其他平台
 
 同一份 `skills/` 通过各平台外壳声明，不复制内容：
 
-| 平台 | 外壳 |
-|------|------|
-| **Pi** | `pi` key + `pi-package` keyword |
-| **Claude Code** | `.claude-plugin/plugin.json` |
-| **Codex** | `.codex-plugin/plugin.json` |
-| **Gemini** | `.gemini/commands/*.toml` + `commands/*.toml` |
-| **OpenCode** | 根 `skills/`（Agent Skills 规范自动发现） |
+| 平台 | 安装方式 |
+|------|----------|
+| **Pi** | `pi install npm:mont-forge-pipeline`（`pi` key + `pi-package` keyword） |
+| **Claude Code** | `/plugin marketplace add royrao2007/mont-forge-pipeline`，或订阅本仓库（`.claude-plugin/plugin.json`） |
+| **Codex** | 插件市场添加本仓库（`.codex-plugin/plugin.json`） |
+| **Gemini** | 订阅本仓库（`.gemini/commands/*.toml` + `commands/*.toml`） |
+| **OpenCode** | 订阅本仓库，自动发现根 `skills/`（Agent Skills 规范） |
 
-### 手动部署到 DSH 原生技能目录
+### 手动部署到 DSH 原生技能目录（不用插件时）
+
+只想拿技能、不要那 9 个工具时：
 
 ```powershell
-Copy-Item .\skills\* "$env:DSH_HOME\skills\" -Recurse -Force
+git clone https://github.com/royrao2007/mont-forge-pipeline.git
+Copy-Item .\mont-forge-pipeline\skills\* "$env:DSH_HOME\skills\" -Recurse -Force
 ```
 
-> DSH 里**不要**同时用插件和原生目录两套，文件系统层会遮蔽插件的同名技能，导致清单显示不全。
+卸载（只删本仓库部署的技能）：
+
+```powershell
+.\mont-forge-pipeline\scripts\uninstall-from-dsh.ps1
+```
+
+> ⚠️ DSH 里**不要**同时用插件和原生目录两套。文件系统层会遮蔽插件的同名技能，
+> 导致技能清单显示不全（只显示部分），且工具里的 `forge_skill` 可能取到另一份副本。
+> 二选一。
 
 ## 目录结构
 
