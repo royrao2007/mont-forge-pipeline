@@ -1,6 +1,6 @@
 {
   "name": "mont-forge-pipeline",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Mont Forge：45 个工程技能 + 9 个开发全流程工具（spec/plan/build/verify/review/ship + assess/catalog/skill）。合并自 addyosmani/agent-skills 与 mattpocock/skills（均 MIT）。",
   "license": "MIT",
   "author": {
