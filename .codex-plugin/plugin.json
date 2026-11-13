@@ -1,0 +1,29 @@
+{
+  "name": "mont-forge",
+  "version": "0.0.10",
+  "description": "Production-grade engineering skills for AI coding agents covering the full software development lifecycle from spec to ship.",
+  "author": {
+    "name": "mont",
+    "url": "https://github.com/royrao2007"
+  },
+  "homepage": "https://github.com/royrao2007/mont-forge",
+  "repository": "https://github.com/royrao2007/mont-forge",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Skills",
+    "shortDescription": "Senior-engineer workflows for AI coding agents: spec, plan, build, test, review, ship.",
+    "longDescription": "Agent Skills bundles 25 production engineering workflows from mont, covering requirements, planning, implementation, testing, review, and shipping.",
+    "developerName": "mont",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Help me choose the right engineering workflow for this task",
+      "Plan and implement this change using the relevant Agent Skills"
+    ]
+  }
+}

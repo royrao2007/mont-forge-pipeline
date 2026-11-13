@@ -1,0 +1,16 @@
+{
+  "name": "mont-forge",
+  "version": "0.0.10",
+  "description": "Production-grade engineering skills for AI coding agents — covering the full software development lifecycle from spec to ship.",
+  "author": {
+    "name": "mont"
+  },
+  "homepage": "https://github.com/royrao2007/mont-forge",
+  "repository": "https://github.com/royrao2007/mont-forge",
+  "license": "MIT",
+  "commands": ["./.claude/commands", "./commands"],
+  "skills": "./skills",
+  "experimental": {
+    "evals": "evals/plugin"
+  }
+}

@@ -6,11 +6,16 @@ Thumbs.db
 .vscode/
 
 # Build artifacts
-*.tgz
 *.zip
+*.tgz
 dist/
-node_modules/
 *.tmp
 
-# Logs
+# Local sync state (upstream refs are git remotes, not files)
+.upstream-cache/
 *.log
+
+# 备份文件
+*.bak
+*.bak-*
+*.bak_*

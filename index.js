@@ -1,11 +1,17 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { join, extname, relative, resolve } from 'node:path';
 
 /**
- * Mont Forge 开发流水线。
+ * Mont Forge —— 工程技能包 + 开发流水线（单包）。
  *
- * 把 mont-forge 的 44 个工程技能编排成覆盖软件开发生命周期的阶段工具：
- * spec → plan → build → verify → review → ship，另有 assess / catalog / skill 三个辅助工具。
+ * 一个插件同时提供两件事：
+ * 1. 技能 provider：把随包分发的 45 个 SKILL.md 注册进 DSH 技能目录；
+ * 2. 流程工具：spec → plan → build → verify → review → ship 六个阶段工具，
+ *    外加 assess / catalog / skill 三个辅助工具。
+ *
+ * 合并的动机：技能是「说明书」，工具是「工位」。分成两个包时，用户装了一个
+ * 却取不到另一个的正文（forge_skill 会落空）；合并后一次安装即自洽。
  *
  * 设计取舍：
  * - 阶段工具返回「阶段契约 + 要加载的技能 + 产物模板 + 退出标准」，让模型直接照着做；
@@ -14,6 +20,152 @@ import { join, extname, relative, resolve } from 'node:path';
  *
  * @module mont-forge-pipeline
  */
+
+/* ------------------------------------------------------------------ */
+/* 技能 provider：随包分发的 45 个 SKILL.md                            */
+/* ------------------------------------------------------------------ */
+
+const PROVIDER_NAME = 'mont-forge';
+const SKILLS_DIR = fileURLToPath(new URL('./skills/', import.meta.url));
+
+/** 运行时技能排名：与内置 bundled 技能同级（600）。 */
+const RUNTIME_RANK = 600;
+
+/** 来源标记：runtime 层技能（低于 project，高于 user）。 */
+const SOURCE = 'runtime';
+
+/**
+ * 解析 SKILL.md 的 YAML frontmatter。
+ * 只取 `name` 与 `description` 两个字段，避免引入 YAML 依赖。
+ */
+function parseFrontmatter(raw) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
+  if (!match) return undefined;
+  const block = match[1];
+  const fields = {};
+  let key;
+  for (const line of block.split(/\r?\n/)) {
+    const kv = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
+    if (kv) {
+      key = kv[1];
+      let value = kv[2].trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      fields[key] = value;
+    } else if (key && /^\s+/.test(line)) {
+      // 续行（多行字段）：拼接到上一个键
+      const trimmed = line.trim();
+      if (trimmed) fields[key] = `${fields[key]} ${trimmed}`.trim();
+    }
+  }
+  return fields;
+}
+
+/** 技能名必须是 ASCII kebab-case。 */
+const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * 列出技能目录下所有含 SKILL.md 的子目录。
+ * @param {string} dir
+ */
+async function listSkillDirs(dir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const dirs = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const full = join(dir, entry.name);
+    try {
+      const info = await stat(join(full, 'SKILL.md'));
+      if (info.isFile()) dirs.push({ dirName: entry.name, path: full });
+    } catch {
+      // 没有 SKILL.md 的目录不是技能目录，跳过
+    }
+  }
+  return dirs;
+}
+
+let cache = null;
+let cacheStamp = 0;
+
+/** 技能目录的最近修改时间；变了就重新扫描，避免新增技能永远不出现。 */
+async function skillsStamp() {
+  try {
+    const info = await stat(SKILLS_DIR);
+    return info.mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * 扫描并解析技能目录，返回候选列表。
+ * 结果按名称排序，保证快照稳定。
+ */
+async function scan() {
+  const stamp = await skillsStamp();
+  if (cache && stamp === cacheStamp) return cache;
+  const dirs = await listSkillDirs(SKILLS_DIR);
+  const candidates = [];
+  for (const { path } of dirs) {
+    let raw;
+    try {
+      raw = await readFile(join(path, 'SKILL.md'), 'utf8');
+    } catch {
+      continue;
+    }
+    const fields = parseFrontmatter(raw);
+    if (!fields) continue;
+    const name = fields.name;
+    if (!name || !KEBAB.test(name)) continue;
+    if (!fields.description) continue;
+    candidates.push({
+      name,
+      description: fields.description,
+      whenToUse: fields['when-to-use'] || undefined,
+      invocation: { modelInvocable: true, userInvocable: true },
+      provider: PROVIDER_NAME,
+      source: SOURCE,
+      resourceBase: { kind: 'directory', path },
+      rank: RUNTIME_RANK,
+      locator: join(path, 'SKILL.md'),
+    });
+  }
+  candidates.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  cache = candidates;
+  cacheStamp = stamp;
+  return candidates;
+}
+
+const provider = {
+  name: PROVIDER_NAME,
+  async list() {
+    return await scan();
+  },
+  async get(candidate) {
+    const candidates = await scan();
+    const found = candidates.find((item) => item.name === candidate.name);
+    if (!found) return undefined;
+    const content = await readFile(found.locator, 'utf8');
+    return {
+      name: found.name,
+      description: found.description,
+      whenToUse: found.whenToUse,
+      invocation: found.invocation,
+      provider: found.provider,
+      source: found.source,
+      resourceBase: found.resourceBase,
+      content,
+    };
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* 下面开始：开发流水线的九个工具                                       */
+/* ------------------------------------------------------------------ */
 
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'out', '.next', '.nuxt', 'coverage',
@@ -518,6 +670,10 @@ export const name = 'mont-forge-pipeline';
 export const inject = ['tools', 'skills'];
 
 export function apply(ctx) {
+  // 1) 注册技能提供方：随包分发的 45 个 SKILL.md 进入技能目录。
+  ctx.skills.registerProvider(() => provider);
+
+  // 2) 注册九个工具。
   const register = (definition) => {
     ctx.effect(() => ctx.tools.register(definition));
   };
@@ -584,13 +740,13 @@ export function apply(ctx) {
           lines.push(`## 已装技能（${all.length} 个）`);
           lines.push('');
           if (owned.length) {
-            lines.push(`### mont-forge 插件提供（${owned.length}）`);
+            lines.push(`### 本包提供（${owned.length}）`);
             lines.push('');
             lines.push(owned.map((s) => `- \`${s.name}\` — ${s.description}`).join('\n'));
             lines.push('');
           }
           if (shadowed.length) {
-            lines.push(`### 其他来源提供（${shadowed.length}）`);
+            lines.push(`### 其他来源（${shadowed.length}）`);
             lines.push('');
             lines.push(shadowed.map((s) => `- \`${s.name}\`（${s.provider}/${s.source}）`).join('\n'));
             lines.push('');
@@ -598,7 +754,7 @@ export function apply(ctx) {
         } else {
           lines.push('## 已安装技能');
           lines.push('');
-          lines.push('未发现技能。请先安装 mont-forge 插件。');
+          lines.push('未发现技能。');
         }
       } catch (error) {
         lines.push(`技能清单读取失败：${error?.message ?? error}`);
