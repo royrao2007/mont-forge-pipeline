@@ -3,7 +3,7 @@ description: Define and enforce this project's quality bar — interview, sane d
 disable-model-invocation: true
 ---
 
-Invoke the mont-forge:constraint-driven-development skill.
+Invoke the mont-forge-pipeline:constraint-driven-development skill.
 
 $ARGUMENTS
 

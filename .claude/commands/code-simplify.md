@@ -3,7 +3,7 @@ description: Simplify code for clarity and maintainability — reduce complexity
 disable-model-invocation: true
 ---
 
-Invoke the mont-forge:code-simplification skill.
+Invoke the mont-forge-pipeline:code-simplification skill.
 
 Simplify recently changed code (or the specified scope) while preserving exact behavior:
 

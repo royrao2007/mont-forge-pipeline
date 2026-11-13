@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Mont Forge",
+    "title": "mont-forge-pipeline",
     "description": "45 production-grade engineering skills plus 9 callable lifecycle tools. The skills cover spec through ship; the tools turn them into a pipeline the model can call directly instead of relying on the user to name a skill.",
     "detail": "docs/DETAIL.md"
   }

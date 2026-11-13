@@ -1,12 +1,12 @@
 {
     "format":  1,
     "title":  {
-                  "en":  "Mont Forge",
-                  "zh":  "Mont Forge 工程技能包"
+                  "en":  "mont-forge-pipeline",
+                  "zh":  "mont-forge-pipeline"
               },
     "description":  {
-                        "en":  "Mont Forge plugins and skill bundles.",
-                        "zh":  "Mont Forge 插件与技能包收录索引。"
+                        "en":  "Engineering skills and a callable development pipeline for AI coding agents.",
+                        "zh":  "工程技能包与可调用的开发流水线，面向 AI 编码代理。"
                     },
     "metadata":  {
                      "categories":  {
@@ -43,20 +43,20 @@
                  },
     "plugins":  [
                     {
-                        "name":  "mont-forge",
+                        "name":  "mont-forge-pipeline",
                         "title":  {
-                                      "en":  "Mont Forge engineering skills",
-                                      "zh":  "Mont Forge 工程技能包"
+                                      "en":  "mont-forge-pipeline",
+                                      "zh":  "mont-forge-pipeline"
                                   },
                         "description":  {
-                                            "en":  "44 production-grade engineering skills for the full lifecycle from spec to ship: 25 from addyosmani/agent-skills plus 19 from mattpocock/skills (both MIT), including grill-me, merged into one pluggable bundle.",
-                                            "zh":  "44 个生产级工程技能，覆盖 spec 到 ship 全生命周期：25 个来自 addyosmani/agent-skills，19 个来自 mattpocock/skills（均为 MIT，含 grill-me），合并为一个可插拔技能包。"
+                                            "en":  "45 production-grade engineering skills plus 9 callable lifecycle tools (spec, plan, build, verify, review, ship, plus assess, catalog, skill) for the full path from requirements to release. Merges addyosmani/agent-skills (25) and mattpocock/skills (19), both MIT.",
+                                            "zh":  "45 个生产级工程技能 + 9 个可调用工具（spec、plan、build、verify、review、ship，另有 assess、catalog、skill），覆盖从需求到发布的完整路径。合并自 addyosmani/agent-skills（25 个）与 mattpocock/skills（19 个），均 MIT。"
                                         },
-                        "icon":  "data:image/png;base64,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",
+                        "icon":  "https://raw.githubusercontent.com/royrao2007/mont-forge-pipeline/main/icon.svg",
                         "author":  "mont",
-                        "homepage":  "https://github.com/royrao2007/mont-forge",
+                        "homepage":  "https://github.com/royrao2007/mont-forge-pipeline",
                         "repository":  {
-                                           "url":  "https://github.com/royrao2007/mont-forge"
+                                           "url":  "https://github.com/royrao2007/mont-forge-pipeline"
                                        },
                         "metadata":  {
                                          "category":  "skills",
@@ -69,27 +69,25 @@
                                                           "security",
                                                           "performance",
                                                           "ci-cd",
+                                                          "pipeline",
                                                           "agent-skills"
                                                       ],
                                          "labels":  [
                                                         "mont"
                                                     ],
                                          "sortKeys":  {
-                                                          "recent":  0
+                                                          "recent":  1
                                                       }
                                      },
                         "versions":  [
                                          {
-                                             "version":  "0.1.1",
-                                             "publishTimestamp":  1794455406,
+                                             "version":  "0.3.0",
+                                             "publishTimestamp":  0,
                                              "source":  {
                                                             "type":  "npm"
-                                                        },
-                                             "engines":  {
-                                                             "dsh":  "\u003e=0.2.0-rc.1 \u003c0.3.0-0"
-                                                         }
-                                         }
-                                     ]
+                                                        }
+                                     }
+                                 ]
                     }
                 ]
 }

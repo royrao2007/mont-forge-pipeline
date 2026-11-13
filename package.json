@@ -1,7 +1,7 @@
 {
   "name": "mont-forge-pipeline",
-  "version": "0.2.1",
-  "description": "Mont Forge：45 个工程技能 + 9 个开发全流程工具（spec/plan/build/verify/review/ship + assess/catalog/skill）。合并自 addyosmani/agent-skills 与 mattpocock/skills（均 MIT）。",
+  "version": "0.3.0",
+  "description": "工程技能包 + 开发流水线：45 个技能覆盖 spec 到 ship，9 个工具（spec/plan/build/verify/review/ship + assess/catalog/skill）。合并自 addyosmani/agent-skills 与 mattpocock/skills（均 MIT）。",
   "license": "MIT",
   "author": {
     "name": "mont",
@@ -52,7 +52,6 @@
     "deepseek-harness",
     "dsh",
     "dsh-plugin",
-    "mont-forge",
     "pipeline",
     "sdlc",
     "skill",

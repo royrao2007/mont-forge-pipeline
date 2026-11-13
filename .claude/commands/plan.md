@@ -3,7 +3,7 @@ description: Break work into small verifiable tasks with acceptance criteria and
 disable-model-invocation: true
 ---
 
-Invoke the mont-forge:planning-and-task-breakdown skill.
+Invoke the mont-forge-pipeline:planning-and-task-breakdown skill.
 
 Read the existing spec (SPEC.md or equivalent) and the relevant codebase sections. Then:
 

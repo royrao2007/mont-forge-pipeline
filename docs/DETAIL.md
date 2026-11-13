@@ -1,4 +1,4 @@
-# Mont Forge
+# mont-forge-pipeline
 
 45 个生产级工程技能 + 9 个开发全流程工具，一个包全部提供。
 
@@ -59,7 +59,7 @@ forge_assess → forge_spec → forge_plan → forge_build → forge_verify → 
 |---|---|---|
 | addyosmani/agent-skills | 25 | 生命周期骨架（定义/规划/构建/验证/评审/交付） |
 | mattpocock/skills | 19 | 独有能力（大规模规划、领域建模、分诊、复盘、教学等） |
-| 本包新增 | 1 | `mont-forge` 总入口，中文意图路由 |
+| 本包新增 | 1 | `mont-forge` 技能（总入口，中文意图路由） |
 | **合计** | **45** | 全部遵循 Agent Skills 规范 |
 
 ## 边界

@@ -1,6 +1,6 @@
 # mont-forge-pipeline
 
-**Mont Forge** —— 45 个生产级工程技能 + 9 个开发全流程工具，装一个包全都有。
+**mont-forge-pipeline** —— 45 个生产级工程技能 + 9 个开发全流程工具，装一个包全都有。
 
 > 合并自 [`addyosmani/agent-skills`](https://github.com/addyosmani/agent-skills)（25 个）与 [`mattpocock/skills`](https://github.com/mattpocock/skills)（19 个），均 MIT。归因见 [NOTICE.md](NOTICE.md)。
 
@@ -91,7 +91,10 @@ forge_spec                               # 然后按阶段推进
 
 ### 本包新增（1 个，中文意图路由）
 
-`mont-forge` —— 总入口。用户说「用 mont-forge 做 X」时，按内置路由表自动选 1–2 个对口子技能，不必记名字。
+`mont-forge` **技能**（注意：这是 45 个技能里的一个名字，不是包名）—— 总入口。
+用户说「用 mont-forge 做 X」时，按内置路由表自动选 1–2 个对口子技能，不必记名字。
+
+> 包名是 `mont-forge-pipeline`；`mont-forge` 只是其中一个技能名。
 
 ## 安装
 
@@ -156,7 +159,7 @@ dsh plugin --profile <profile> add "F:\path\to\mont-forge-pipeline"
 
 ### 安装后怎么确认成功
 
-**1. 看插件是否加载**——DSH「插件」列表里有 `Mont Forge`。
+**1. 看插件是否加载**——DSH「插件」列表里有 `mont-forge-pipeline`。
 
 **2. 看工具是否可用**——新会话里问：
 

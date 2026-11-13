@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Mont Forge",
+    "title": "mont-forge-pipeline",
     "description": "45 个生产级工程技能 + 9 个开发全流程工具。技能覆盖 spec 到 ship（需求、规划、实现、测试、评审、交付）；工具把技能编成可调用的流水线，模型可直接调用而不必记住技能名。",
     "detail": "docs/DETAIL.md"
   }

@@ -1,23 +1,31 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
-  "name": "addy-mont-forge",
-  "description": "Production-grade engineering skills for AI coding agents — covering the full software development lifecycle from spec to ship.",
-  "owner": {
-    "name": "mont",
-    "url": "https://github.com/royrao2007"
-  },
-  "plugins": [
-    {
-      "name": "mont-forge",
-      "version": "0.0.10",
-      "source": {
-        "source": "github",
-        "repo": "royrao2007/mont-forge"
-      },
-      "description": "Production-grade engineering skills covering every phase of software development: spec, plan, build, verify, review, and ship.",
-      "homepage": "https://github.com/royrao2007/mont-forge",
-      "license": "MIT",
-      "keywords": ["skills", "agents", "engineering", "spec", "tdd", "review", "ship"]
-    }
-  ]
+    "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+    "name": "mont-forge-pipeline",
+    "description": "Production-grade engineering skills for AI coding agents — covering the full software development lifecycle from spec to ship.",
+    "owner": {
+        "name": "mont",
+        "url": "https://github.com/royrao2007"
+    },
+    "plugins": [
+        {
+            "name": "mont-forge-pipeline",
+            "version": "0.0.10",
+            "source": {
+                "source": "github",
+                "repo": "royrao2007/mont-forge-pipeline"
+            },
+            "description": "Production-grade engineering skills covering every phase of software development: spec, plan, build, verify, review, and ship.",
+            "homepage": "https://github.com/royrao2007/mont-forge-pipeline",
+            "license": "MIT",
+            "keywords": [
+                "skills",
+                "agents",
+                "engineering",
+                "spec",
+                "tdd",
+                "review",
+                "ship"
+            ]
+        }
+    ]
 }

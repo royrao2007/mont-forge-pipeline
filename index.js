@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { join, extname, relative, resolve } from 'node:path';
 
 /**
- * Mont Forge —— 工程技能包 + 开发流水线（单包）。
+ * mont-forge-pipeline —— 工程技能包 + 开发流水线（单包）。
  *
  * 一个插件同时提供两件事：
  * 1. 技能 provider：把随包分发的 45 个 SKILL.md 注册进 DSH 技能目录；
@@ -25,7 +25,7 @@ import { join, extname, relative, resolve } from 'node:path';
 /* 技能 provider：随包分发的 45 个 SKILL.md                            */
 /* ------------------------------------------------------------------ */
 
-const PROVIDER_NAME = 'mont-forge';
+const PROVIDER_NAME = 'mont-forge-pipeline';
 const SKILLS_DIR = fileURLToPath(new URL('./skills/', import.meta.url));
 
 /** 运行时技能排名：与内置 bundled 技能同级（600）。 */
@@ -495,7 +495,7 @@ function stageTool(stageId) {
   const stage = STAGE_BY_ID.get(stageId);
   return {
     name: toolNameFor(stageId),
-    description: `Mont Forge 流水线·${stage.title}：${stage.goal} 产出 ${stage.deliverables.join('、')}；满足退出标准后进入下一阶段。`,
+    description: `mont-forge-pipeline 流水线·${stage.title}：${stage.goal} 产出 ${stage.deliverables.join('、')}；满足退出标准后进入下一阶段。`,
     parameters: {
       type: 'object',
       properties: {
@@ -685,7 +685,7 @@ export function apply(ctx) {
   register({
     name: 'forge_assess',
     description:
-      'Mont Forge 项目评估：扫描指定目录，报告技术栈、测试、CI、文档、依赖锁定与待办标记，并给出建议的流水线入口。开发新系统或接手陌生项目时先调用它。',
+      'mont-forge-pipeline 项目评估：扫描指定目录，报告技术栈、测试、CI、文档、依赖锁定与待办标记，并给出建议的流水线入口。开发新系统或接手陌生项目时先调用它。',
     parameters: {
       type: 'object',
       properties: {
@@ -712,7 +712,7 @@ export function apply(ctx) {
   register({
     name: 'forge_catalog',
     description:
-      '列出 Mont Forge 流水线的六个阶段、每阶段要加载的技能，以及已安装的 mont-forge 技能清单。想确认「现在该用哪个工具」时调用。',
+      '列出 mont-forge-pipeline 的六个阶段、每阶段要加载的技能，以及已安装的技能清单。想确认「现在该用哪个工具」时调用。',
     parameters: {
       type: 'object',
       properties: {},
@@ -721,7 +721,7 @@ export function apply(ctx) {
     output: OUTPUT,
     async execute() {
       const lines = [];
-      lines.push('# Mont Forge 流水线目录');
+      lines.push('# mont-forge-pipeline 目录');
       lines.push('');
       lines.push('| 阶段 | 工具 | 目标 |');
       lines.push('|------|------|------|');
@@ -734,8 +734,8 @@ export function apply(ctx) {
 
       try {
         const all = await ctx.skills.list({});
-        const owned = all.filter((s) => s.provider === 'mont-forge');
-        const shadowed = all.filter((s) => s.provider !== 'mont-forge');
+        const owned = all.filter((s) => s.provider === 'mont-forge-pipeline');
+        const shadowed = all.filter((s) => s.provider !== 'mont-forge-pipeline');
         if (all.length) {
           lines.push(`## 已装技能（${all.length} 个）`);
           lines.push('');
@@ -767,7 +767,7 @@ export function apply(ctx) {
   register({
     name: 'forge_skill',
     description:
-      '读取 mont-forge 某个技能的完整正文（SKILL.md）。阶段工具只给流程与模板，需要具体方法论细节时用它按名取。',
+      '读取某个技能的完整正文（SKILL.md）。阶段工具只给流程与模板，需要具体方法论细节时用它按名取。',
     parameters: {
       type: 'object',
       properties: {

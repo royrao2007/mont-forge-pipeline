@@ -1,11 +1,11 @@
 {
-  "name": "mont-forge",
+  "name": "mont-forge-pipeline",
   "interface": {
     "displayName": "Agent Skills"
   },
   "plugins": [
     {
-      "name": "mont-forge",
+      "name": "mont-forge-pipeline",
       "version": "0.0.10",
       "description": "Production-grade engineering skills covering every phase of software development: spec, plan, build, verify, review, and ship.",
       "source": {
