@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Mont Forge">
+  <defs>
+    <linearGradient id="mf-fire" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffb347"/>
+      <stop offset="100%" stop-color="#e2622b"/>
+    </linearGradient>
+    <linearGradient id="mf-steel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8ea3bd"/>
+      <stop offset="100%" stop-color="#4a5a70"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#151a24"/>
+  <!-- anvil body -->
+  <path d="M14 30 h30 c6 0 9-3 11-7 l4 3 c-2 7-7 11-15 11 h-4 v5 h9 v4 h-9 v9 h-11 v-9 h-9 v-4 h9 v-5 h-6 z" fill="url(#mf-steel)"/>
+  <!-- horn -->
+  <path d="M14 30 c-4 0-7-1-9-3 l2-3 c2 1 4 2 7 2 z" fill="url(#mf-steel)"/>
+  <!-- spark / forge heat -->
+  <path d="M44 12 c1.6 2.6 4.4 3.4 4.4 6.2 c0 2.3-1.8 4-4 4 c-2.2 0-4-1.7-4-4 c0-2.8 2.8-3.6 3.6-6.2 z" fill="url(#mf-fire)"/>
+  <circle cx="52.5" cy="9.5" r="1.6" fill="#ffd98a"/>
+  <circle cx="37" cy="8" r="1.1" fill="#ffd98a"/>
+</svg>

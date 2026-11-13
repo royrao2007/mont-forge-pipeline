@@ -1,0 +1,4 @@
+- insert:
+    - id: mont-forge-pipeline
+      name: 'mont-forge-pipeline'
+      config: {}

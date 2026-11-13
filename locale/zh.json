@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Mont Forge 开发流水线",
+    "description": "把 mont-forge 的 44 个工程技能编排成一条可调用的开发流水线：需求、规格、计划、实现、验证、评审、交付七个阶段各有专用工具，模型可直接调用，不依赖用户记住技能名。",
+    "detail": "docs/DETAIL.md"
+  }
+}

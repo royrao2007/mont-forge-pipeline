@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Mont Forge pipeline",
+    "description": "Turns the 44 mont-forge engineering skills into a callable development pipeline: dedicated tools for spec, plan, build, verify, review, and ship, so the model can call each stage directly instead of relying on the user to name a skill.",
+    "detail": "docs/DETAIL.md"
+  }
+}

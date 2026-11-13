@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Build artifacts
+*.tgz
+*.zip
+dist/
+node_modules/
+*.tmp
+
+# Logs
+*.log

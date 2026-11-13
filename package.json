@@ -1,0 +1,58 @@
+{
+  "name": "mont-forge-pipeline",
+  "version": "0.1.0",
+  "description": "Mont Forge 开发流水线：把 45 个工程技能编排成覆盖 spec→plan→build→verify→review→ship 全流程的 9 个可调用工具。",
+  "license": "MIT",
+  "author": {
+    "name": "mont",
+    "url": "https://github.com/royrao2007"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/royrao2007/mont-forge-pipeline.git"
+  },
+  "homepage": "https://github.com/royrao2007/mont-forge-pipeline",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "icon": "./icon.svg",
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "locale",
+    "docs",
+    "icon.svg",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "mont-forge",
+    "pipeline",
+    "sdlc",
+    "agent-skills"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1 <5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}
