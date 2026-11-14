@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "mont-forge-pipeline",
-    "description": "45 个生产级工程技能 + 9 个开发全流程工具。forge_review 现在真实采集 git 变更，并跑三通道闸门评审：代码评审（置信 ≥80）+ 安全变更审查（≥8/10）+ 可选专项镜头。",
+    "description": "45 个生产级工程技能 + 11 个可调用工具：六阶段流水线（spec/plan/build/verify/review/ship，评审带三通道闸门），外加站会日报与事故响应两个旁路能力。",
     "detail": "docs/DETAIL.md"
   }
 }

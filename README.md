@@ -1,6 +1,6 @@
 # mont-forge-pipeline
 
-**mont-forge-pipeline** —— 45 个生产级工程技能 + 9 个开发全流程工具，装一个包全都有。
+**mont-forge-pipeline** —— 45 个生产级工程技能 + 11 个开发全流程工具，装一个包全都有。
 
 > 合并自 [`addyosmani/agent-skills`](https://github.com/addyosmani/agent-skills)（25 个）与 [`mattpocock/skills`](https://github.com/mattpocock/skills)（19 个），均 MIT。归因见 [NOTICE.md](NOTICE.md)。
 
@@ -24,7 +24,7 @@ dsh plugin --profile <profile> add mont-forge-pipeline
 forge_catalog
 ```
 
-看到六个阶段、九个工具和 45 个技能清单，就是装好了。
+看到六个阶段、十一个工具和 45 个技能清单，就是装好了。
 
 **用起来**：
 
@@ -44,7 +44,7 @@ forge_spec                               # 然后按阶段推进
 
 合成一个包后，一次安装即自洽：模型用工具走流程，需要方法论细节时按名取正文。
 
-## 九个工具
+## 十一个工具
 
 | 阶段 | 工具 | 产出 |
 |------|------|------|
@@ -52,16 +52,29 @@ forge_spec                               # 然后按阶段推进
 | 规格 → 计划 | `forge_plan` | 任务清单、阻塞边、关键路径、首个小切片 |
 | 实现 | `forge_build` | 可运行的小切片与对应测试 |
 | 验证 | `forge_verify` | 复现记录、根因、回归测试、验证证据 |
-| 评审 | `forge_review` | 五轴结论、分级问题清单、必修复项 |
+| 评审 | `forge_review` | 三通道闸门结论：代码评审（≥80）+ 安全审查（≥8/10）+ 可选镜头，分级问题清单、必修复项 |
 | 交付 | `forge_ship` | 提交历史、CI 结果、文档、监控、回滚预案 |
+
+旁路（不在主链上，属于同一插件）：
+
+| 工具 | 触发时机 | 产出 |
+|------|----------|------|
+| `forge_standup` | 准备站会、汇总最近工作 | yesterday/today/blockers 日报（真实采集 git 活动） |
+| `forge_incident` | 出现告警、事故定级、写状态通报或复盘 | 分诊/通报/缓解/复盘四阶段文档（只产出文档，不改代码） |
 
 辅助：
 
 - `forge_assess` — 扫描项目目录，报告技术栈、测试、CI、文档、依赖锁定与待办标记，给建议入口。开发新系统或接手陌生项目时先跑它。
-- `forge_catalog` — 列出阶段、工具与已装技能，确认「现在该用哪个」。
+- `forge_catalog` — 列出阶段、**先后逻辑**、旁路能力与已装技能，确认「现在该用哪个」。
 - `forge_skill` — 按名读取某个技能的完整正文。
 
-每个阶段工具返回「阶段目标 + 要加载的技能 + 步骤 + 产物模板 + 退出标准 + 下一步入口」，并串成一条链。
+每个阶段工具返回「阶段目标 + 要加载的技能 + 步骤 + 产物模板 + 退出标准 + 下一步入口」，并串成一条链：
+
+```
+forge_assess（可选）→ forge_spec → forge_plan → forge_build → forge_verify → forge_review → forge_ship
+```
+
+单向链，每阶段退出标准不满足就不前进；`forge_review` 只读，落手修代码的是 `forge_build`；简化只在评审干净后跑。事故是旁路：`forge_verify` 确认是事故 → `forge_incident` 通报与复盘 → 修复回到 `forge_build` → `forge_verify` → `forge_review`。
 
 ## 45 个技能
 
@@ -167,7 +180,7 @@ dsh plugin --profile <profile> add "F:\path\to\mont-forge-pipeline"
 forge_catalog
 ```
 
-应返回六个阶段（spec / plan / build / verify / review / ship）、九个工具，以及 45 个技能的清单。
+应返回六个阶段（spec / plan / build / verify / review / ship）、十一个工具，以及 45 个技能的清单。
 
 **3. 看技能是否可用**——说「用 mont-forge 评估下这个项目」，或直接：
 
@@ -210,7 +223,7 @@ dsh plugin --profile <profile> remove mont-forge-pipeline
 
 ### 手动部署到 DSH 原生技能目录（不用插件时）
 
-只想拿技能、不要那 9 个工具时：
+只想拿技能、不要那 11 个工具时：
 
 ```powershell
 git clone https://github.com/royrao2007/mont-forge-pipeline.git
@@ -231,7 +244,7 @@ Copy-Item .\mont-forge-pipeline\skills\* "$env:DSH_HOME\skills\" -Recurse -Force
 
 ```
 mont-forge-pipeline/
-├── index.js         # 技能 provider + 9 个工具
+├── index.js         # 技能 provider + 11 个工具
 ├── skills/          # 45 个 SKILL.md（唯一内容真源）
 ├── references/      # 7 个共享清单
 ├── overrides/       # 优化层（同步脚本永不写入）

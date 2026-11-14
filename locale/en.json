@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "mont-forge-pipeline",
-    "description": "45 production-grade engineering skills plus 9 callable lifecycle tools. forge_review now collects the real git change and runs a three-channel gated review: code review (confidence >= 80), security change review (>= 8/10), and optional specialist lenses.",
+    "description": "45 production-grade engineering skills plus 11 callable tools: a six-stage pipeline (spec, plan, build, verify, review, ship) with a gated three-channel review, plus standup reports and incident response as side capabilities.",
     "detail": "docs/DETAIL.md"
   }
 }

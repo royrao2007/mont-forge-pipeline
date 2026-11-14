@@ -931,6 +931,177 @@ function buildAssessment(report) {
 }
 
 /* ------------------------------------------------------------------ */
+/* forge_standup / forge_incident：节奏与事件能力                          */
+/*                                                                     */
+/* 这两个不是开发阶段，而是「节律」与「事件」两类旁路能力：            */
+/* - forge_standup：把流水线产出的结果汇成一份日报（只读）；            */
+/* - forge_incident：事故分诊 + 通报 + 复盘（只产出文档，不改代码）。    */
+/* 方法论全文在 references/standup.md 与 references/incident-response.md。*/
+/* ------------------------------------------------------------------ */
+
+/** 取最近 N 天的提交（作者 + 主题 + 变更文件数），用于日报的真实事实。 */
+async function recentCommits(repoRoot, days) {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const out = await gitRun(repoRoot, ['log', `--since=${since}`, '--no-merges', '--pretty=format:%h|%an|%s']);
+  if (!out) return [];
+  const commits = [];
+  for (const line of out.split('\n')) {
+    if (!line.trim()) continue;
+    const [sha, author, ...rest] = line.split('|');
+    if (!sha) continue;
+    commits.push({ sha, author, subject: rest.join('|') });
+    if (commits.length >= 40) break;
+  }
+  return commits;
+}
+
+/** 统计一段时间内改动最频繁的文件。 */
+async function hotFiles(repoRoot, days) {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const out = await gitRun(repoRoot, ['log', `--since=${since}`, '--name-only', '--pretty=format:']);
+  if (!out) return [];
+  const counts = new Map();
+  for (const line of out.split('\n')) {
+    const f = line.trim();
+    if (!f) continue;
+    counts.set(f, (counts.get(f) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+}
+
+const STANDUP_REF = 'standup.md';
+const INCIDENT_REF = 'incident-response.md';
+
+/** forge_standup 的 execute：真实采集 git 事实 + 日报契约。 */
+async function standupExecutor(args) {
+  if (args?.refs) {
+    return { text: await reviewReference(STANDUP_REF) };
+  }
+  const root = resolve(args?.path ? String(args.path) : process.cwd());
+  const days = Number.isFinite(Number(args?.days)) ? Math.max(1, Math.min(30, Number(args.days))) : 1;
+  const isRepo = (await gitRun(root, ['rev-parse', '--git-dir'])) !== null;
+
+  const lines = [];
+  lines.push('# 站会日报生成');
+  lines.push('');
+  if (!isRepo) {
+    lines.push('> ⚠️ 该目录不是 git 仓库，无法自动采集。按「standalone」模式执行：把用户口述的工作整理成下面三段。');
+  } else {
+    const branch = (await gitRun(root, ['rev-parse', '--abbrev-ref', 'HEAD']))?.trim();
+    const commits = await recentCommits(root, days);
+    const hot = await hotFiles(root, days);
+    const statusOut = await gitRun(root, ['status', '--porcelain']);
+    const status = String(statusOut ?? '').split('\n').map((l) => l.trimEnd()).filter(Boolean);
+
+    lines.push(`**采集自**：${root}`);
+    lines.push(`**分支**：${branch ?? '未知'}　**窗口**：最近 ${days} 天`);
+    lines.push('');
+    lines.push(`## 真实活动（${commits.length} 次提交）`);
+    lines.push('');
+    if (commits.length === 0) {
+      lines.push('- 该窗口内没有新提交。');
+    } else {
+      for (const c of commits.slice(0, 15)) {
+        lines.push(`- \`${c.sha}\` ${c.subject}　— ${c.author}`);
+      }
+      if (commits.length > 15) lines.push(`- …另有 ${commits.length - 15} 次提交`);
+    }
+    if (hot.length) {
+      lines.push('');
+      lines.push('## 改动热点');
+      lines.push('');
+      for (const [file, n] of hot) lines.push(`- ${file}（${n} 次）`);
+    }
+    if (status.length) {
+      lines.push('');
+      lines.push(`## 未提交改动（${status.length} 条）`);
+      lines.push('');
+      lines.push('```');
+      lines.push(...status.slice(0, 15));
+      lines.push('```');
+    }
+  }
+  lines.push('');
+  lines.push('## 生成规则（方法论全文：`forge_standup({ refs: true })`）');
+  lines.push('');
+  lines.push('1. 把上面的真实活动翻译成「昨天 / 今天 / 阻塞」三段；提交主题要改写成业务语言，不要直接贴 commit subject。');
+  lines.push('2. 每段每条一行；没有阻塞就写「Blockers: none」，不要省掉这一段。');
+  lines.push('3. 没有接工单系统就不写工单号——绝不编造引用。');
+  lines.push('4. 输出用下面的模板：');
+  lines.push('');
+  lines.push('```markdown');
+  lines.push('## Standup — [Date]');
+  lines.push('');
+  lines.push('### Yesterday');
+  lines.push('- [完成的事]');
+  lines.push('');
+  lines.push('### Today');
+  lines.push('- [计划的事]');
+  lines.push('');
+  lines.push('### Blockers');
+  lines.push('- [阻塞点 + 需要谁协助]');
+  lines.push('```');
+  lines.push('');
+  lines.push('> 只读：不改任何文件、不提交代码。日报不卡流水线——它汇报结果，不挡下一阶段。');
+  return { text: lines.join('\n') };
+}
+
+/** forge_incident 的 execute：分诊/通报/复盘契约（不自动改代码）。 */
+async function incidentExecutor(args) {
+  if (args?.refs) {
+    return { text: await reviewReference(INCIDENT_REF) };
+  }
+  const mode = args?.mode ? String(args.mode).trim() : undefined;
+  const lines = [];
+  lines.push('# 事故响应');
+  lines.push('');
+  lines.push('**模式**：' + (mode ?? '未指定（请确认处于哪个阶段：new / update / postmortem）'));
+  if (args?.description) {
+    lines.push('');
+    lines.push('**事件描述**：');
+    lines.push(String(args.description));
+  }
+  lines.push('');
+  lines.push('## 流程（方法论全文：`forge_incident({ refs: true })`）');
+  lines.push('');
+  lines.push('**阶段 1 · 分诊（TRIAGE）**');
+  lines.push('- 判定严重级别（SEV1 服务全挂 / SEV2 主要功能降级 / SEV3 局部影响 / SEV4 轻微），按级别定响应时限（立即 / 15 分钟 / 1 小时 / 次工作日）。');
+  lines.push('- 明确受影响的系统与用户范围。');
+  lines.push('- 分配角色：指挥（IC）、沟通（comms）、处置（responders）。');
+  lines.push('');
+  lines.push('**阶段 2 · 通报（COMMUNICATE）**');
+  lines.push('- 起草内部状态更新（模板见 references）。');
+  lines.push('- 需要时起草对外沟通。');
+  lines.push('- 定下作战室与通报节奏。');
+  lines.push('');
+  lines.push('**阶段 3 · 缓解（MITIGATE）**');
+  lines.push('- 记录已采取的缓解动作。');
+  lines.push('- 维护事件时间线。');
+  lines.push('- 确认恢复。');
+  lines.push('');
+  lines.push('**阶段 4 · 复盘（POSTMORTEM）**');
+  lines.push('- 无责复盘文档（5 Whys 根因、时间线重建）。');
+  lines.push('- 行动项带责任人与优先级（P0/P1/P2）。');
+  lines.push('');
+  lines.push('## 硬性纪律');
+  lines.push('');
+  lines.push('1. **只产出文档，不改代码、不改配置**——修复动作交回代码所有者。');
+  lines.push('2. **通报只写事实**：发生了什么、谁受影响、我们在做什么、下次更新何时；未证实的根因不写。');
+  lines.push('3. **立即开写**：信息不全时先写已知部分，边查边更新，不等齐再动笔。');
+  lines.push('4. **复盘无责**：只谈系统与流程，不谈个人。');
+  lines.push('5. 未知就写未知：「根因待确认」是合法的时间线条目，猜测不是。');
+  lines.push('');
+  lines.push('## 与流水线的衔接');
+  lines.push('');
+  lines.push('事故是流水线的旁路，不是某个阶段：');
+  lines.push('');
+  lines.push('- `forge_verify` 里确认是事故 → 交由本流程负责通报与复盘文档；');
+  lines.push('- 真正的代码修复回到 `forge_build` → `forge_verify` → `forge_review`；');
+  lines.push('- 复盘的行动项就是回流流水线的入口。');
+  return { text: lines.join('\n') };
+}
+
+/* ------------------------------------------------------------------ */
 /* 插件导出                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -949,6 +1120,58 @@ export function apply(ctx) {
   for (const stage of STAGES) {
     register(stageTool(stage.id));
   }
+
+  register({
+    name: 'forge_standup',
+    description:
+      'mont-forge-pipeline 站会日报：真实采集最近提交、改动热点与未提交改动，产出 yesterday/today/blockers 三段日报（只读）。准备站会、汇总昨天工作或整理工作进展时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: '项目根目录绝对路径。省略时用当前进程工作目录。',
+        },
+        days: {
+          type: 'number',
+          description: '回看窗口天数，默认 1（昨天），最大 30。',
+        },
+        refs: {
+          type: 'boolean',
+          description: '为 true 时只返回方法论全文（standup.md），不执行采集。',
+        },
+      },
+      additionalProperties: false,
+    },
+    output: OUTPUT,
+    execute: standupExecutor,
+  });
+
+  register({
+    name: 'forge_incident',
+    description:
+      'mont-forge-pipeline 事故响应：按分诊→通报→缓解→复盘四阶段产出事故文档（严重级别、状态更新模板、无责复盘）。出现告警、需要事故定级、写状态通报或写复盘时调用；只产出文档，不改代码。',
+    parameters: {
+      type: 'object',
+      properties: {
+        mode: {
+          type: 'string',
+          description: 'new（新建事件）/ update（状态更新）/ postmortem（复盘）。省略时按描述自动判断。',
+        },
+        description: {
+          type: 'string',
+          description: '事件描述或当前状态。',
+        },
+        refs: {
+          type: 'boolean',
+          description: '为 true 时只返回方法论全文（incident-response.md），不产出流程。',
+        },
+      },
+      additionalProperties: false,
+    },
+    output: OUTPUT,
+    execute: incidentExecutor,
+  });
 
   register({
     name: 'forge_assess',
@@ -997,7 +1220,40 @@ export function apply(ctx) {
         lines.push(`| ${s.title.replace(/^[①-⑥]\s*/, '')} | \`${toolNameFor(s.id)}\` | ${s.goal} |`);
       }
       lines.push('');
-      lines.push('辅助工具：`forge_assess`（项目扫描）、`forge_catalog`（本目录）、`forge_skill`（取技能正文）。');
+      lines.push('## 六阶段的先后逻辑');
+      lines.push('');
+      lines.push('阶段是一条单向链，每个阶段有退出标准，不满足就不进下一阶段：');
+      lines.push('');
+      lines.push('```');
+      lines.push('forge_assess（先摸清现状，可选）');
+      lines.push('   → forge_spec（规格：目标/非目标/验收标准/质量门槛）');
+      lines.push('      → forge_plan（计划：任务清单/阻塞边/关键路径/首个小切片）');
+      lines.push('         → forge_build（实现：薄切片 + 测试，逐片验证）');
+      lines.push('            → forge_verify（验证：复现→根因→回归测试→证据）');
+      lines.push('               → forge_review（评审：三通道闸门，只读，只报过闸发现）');
+      lines.push('                  → forge_ship（交付：提交/CI/ADR/监控/回滚）');
+      lines.push('```');
+      lines.push('');
+      lines.push('**关键纪律**：');
+      lines.push('');
+      lines.push('- `forge_review` 只读，修复建议写进报告；真正落手修代码的是 `forge_build`。');
+      lines.push('- 简化（code-simplification）只在 `forge_review` 干净后跑——先审后改。');
+      lines.push('- `forge_ship` 之后建议 `retro` 复盘。');
+      lines.push('');
+      lines.push('## 旁路能力（不在主链上，但属于同一插件）');
+      lines.push('');
+      lines.push('| 工具 | 触发时机 | 产出 |');
+      lines.push('|------|----------|------|');
+      lines.push('| `forge_standup` | 准备站会、汇总最近工作 | yesterday/today/blockers 日报（真实采集 git 活动） |');
+      lines.push('| `forge_incident` | 出现告警、事故定级、写状态通报或复盘 | 分诊/通报/缓解/复盘四阶段文档（只产出文档，不改代码） |');
+      lines.push('');
+      lines.push('事故是旁路：`forge_verify` 里确认是事故 → `forge_incident` 负责通报与复盘 → 修复回到 `forge_build` → `forge_verify` → `forge_review`。');
+      lines.push('');
+      lines.push('## 辅助工具');
+      lines.push('');
+      lines.push('- `forge_assess` — 扫描项目目录，给出工程信号与建议的流水线入口。');
+      lines.push('- `forge_catalog` — 本目录（阶段、先后逻辑、旁路能力、已装技能）。');
+      lines.push('- `forge_skill` — 按名读取某个技能的完整正文。');
       lines.push('');
 
       try {
