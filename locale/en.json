@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "mont-forge-pipeline",
-    "description": "45 production-grade engineering skills plus 9 callable lifecycle tools. The skills cover spec through ship; the tools turn them into a pipeline the model can call directly instead of relying on the user to name a skill.",
+    "description": "45 production-grade engineering skills plus 9 callable lifecycle tools. forge_review now collects the real git change and runs a three-channel gated review: code review (confidence >= 80), security change review (>= 8/10), and optional specialist lenses.",
     "detail": "docs/DETAIL.md"
   }
 }

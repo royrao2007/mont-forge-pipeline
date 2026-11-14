@@ -1,5 +1,6 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
 import { join, extname, relative, resolve } from 'node:path';
 
 /**
@@ -192,9 +193,9 @@ const SKILL_NOTES = {
   'source-driven-development': '以官方文档为准，不凭记忆写 API',
   'debugging-and-error-recovery': '复现 → 定位 → 修复 → 防回归',
   'browser-testing-with-devtools': '用 Chrome DevTools 做运行时验证',
-  'code-review-and-quality': '五轴评审：正确性/可维护/可读/测试/风险',
-  'code-simplification': '在行为不变的前提下降低复杂度',
-  'security-and-hardening': '输入校验、鉴权、密钥、依赖安全',
+  'code-review-and-quality': '五轴评审 + confidence ≥80 闸门（review-gates.md）',
+  'code-simplification': '行为等价简化，只在评审干净后跑（先审后改）',
+  'security-and-hardening': '安全变更审查：误报过滤 + 置信 ≥8/10 闸门',
   'performance-optimization': '先测量，只优化真正热点',
   'git-workflow-and-versioning': '原子提交、干净历史、语义化版本',
   'ci-cd-and-automation': '每次变更自动过质量门',
@@ -352,23 +353,27 @@ const STAGES = [
   {
     id: 'review',
     title: '⑤ 评审（review）',
-    goal: '合并前按五个轴检查，并做简化、安全、性能专项。',
+    goal: '合并前三通道闸门评审：代码评审（confidence ≥80）+ 安全变更审查（≥8/10）+ 可选专项镜头，全部只读、只报过闸发现。',
     skills: ['code-review-and-quality', 'code-simplification', 'security-and-hardening', 'performance-optimization'],
     steps: [
-      '五轴过一遍：正确性、可维护性、可读性、测试、风险。',
-      '能简化就简化，但行为不变。',
-      '安全：所有外部输入是否校验、鉴权是否覆盖、密钥是否外泄、依赖是否有已知漏洞。',
+      '通道 1（代码评审）：五轴独立过一遍（正确性、可维护性、可读性、测试、风险），每条发现按 0–100 评分，只报 ≥80 的；评分锚点与硬排除见 references/review-gates.md。',
+      '通道 2（安全）：只看本变更新引入的安全影响；候选逐条过误报过滤（references/security-false-positive-filtering.md），只报置信 ≥8/10 的。',
+      '通道 3（可选镜头）：comments / tests / errors / types，按 references/review-lenses/ 对应文件执行，镜头结论按自身分级，不冒充主闸门。',
+      '所有通道只读：修复建议写进报告，不落手改代码；报告按 P0/P1/P2 分级。',
+      '评审干净（P0 清零）之后才允许简化：用 code-simplification 做行为等价改写，先审后改的接力顺序不可跳。',
       '性能：先测量再优化，确认瓶颈而不是猜。',
-      '输出问题清单，按 P0/P1/P2 分级并给修复建议。',
     ],
-    deliverables: ['评审结论', '问题清单（分级）', '必须修复项'],
-    exit: ['P0 清零', '每个问题都有定位与建议', '测试证据齐全'],
+    deliverables: ['评审结论（过闸发现）', '问题清单（Critical 90-100 / Important 80-89 分级）', '必须修复项', '各通道查了什么'],
+    exit: ['Critical 清零', '每条发现都有证据引用与修复建议', '低于 80 分的候选已丢弃并说明查了什么', '测试证据齐全'],
     template: `## 评审：<变更>
 
-| 级别 | 文件:行 | 问题 | 建议 |
-|------|---------|------|------|
-| P0   |         |      |      |
+| 级别 | 通道 | 置信度 | 文件:行 | 问题 | 建议 |
+|------|------|--------|---------|------|------|
+| Critical | code | 92 | | | |
+| Important | security | 8/10 | | | |
 
+- 各通道查了什么：
+- 被丢弃的候选（低于闸门）：
 - 正确性：
 - 可维护性：
 - 可读性：
@@ -491,8 +496,271 @@ function stageExecutor(stageId) {
   };
 }
 
+/* ------------------------------------------------------------------ */
+/* forge_review：真实变更采集 + 三通道闸门契约                            */
+/*                                                                     */
+/* 不是"返回建议"：工具先用 git 真实采集当前变更（status/diff/stat），   */
+/* 再输出带 confidence 闸门的三通道评审契约。通道方法论全文在           */
+/* references/ 下（review-gates / security-change-review / lenses），   */
+/* 模型按契约执行，报告必须过闸门。                                     */
+/* ------------------------------------------------------------------ */
+
+/** promisified execFile，带超时与缓冲上限；git 不可用时返回 null 而不是抛出。 */
+function gitRun(repoRoot, gitArgs, timeoutMs = 10_000) {
+  return new Promise((resolvePromise) => {
+    const child = execFile(
+      'git',
+      ['-C', repoRoot, ...gitArgs],
+      { timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024, windowsHide: true },
+      (error, stdout) => {
+        if (error && !stdout) return resolvePromise(null);
+        resolvePromise(String(stdout ?? ''));
+      },
+    );
+    child.on('error', () => resolvePromise(null));
+  });
+}
+
+/** 解析 `git diff --numstat` 行 → [{add, del, path}]；二进制行的 - 显示为 null。 */
+function parseNumstat(numstat) {
+  const out = [];
+  for (const line of String(numstat ?? '').split('\n')) {
+    if (!line.trim()) continue;
+    const m = /^(\d+|-)\t(\d+|-)\t(.+)$/.exec(line);
+    if (!m) continue;
+    out.push({
+      add: m[1] === '-' ? null : Number(m[1]),
+      del: m[2] === '-' ? null : Number(m[2]),
+      path: m[3],
+    });
+  }
+  return out;
+}
+
+const REVIEW_REF_BASE = new URL('./references/', import.meta.url);
+
+/** 读取随包 references 文件；失败时返回占位说明而不是让工具崩掉。 */
+async function reviewReference(fileName) {
+  try {
+    const body = await readFile(fileURLToPath(new URL(fileName, REVIEW_REF_BASE)), 'utf8');
+    return body;
+  } catch {
+    return `(随包参考文件缺失：references/${fileName})`;
+  }
+}
+
+/**
+ * 采集评审目标。优先级：调用方显式给的 diff > git 工作树（未提交 + 未推送提交）。
+ * 非 git 目录或 git 失败时返回 { available: false }，契约退化为"请粘贴 diff"。
+ */
+async function collectReviewTarget(repoRoot, explicitDiff) {
+  if (explicitDiff && String(explicitDiff).trim()) {
+    const diff = String(explicitDiff);
+    return {
+      available: true,
+      source: 'pasted diff',
+      diff,
+      numstat: [],
+      status: [],
+      branch: null,
+      base: null,
+    };
+  }
+  const branchOut = await gitRun(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
+  if (branchOut === null) return { available: false };
+  const branch = branchOut.trim() || null;
+  const statusOut = await gitRun(repoRoot, ['status', '--porcelain']);
+  const status = String(statusOut ?? '')
+    .split('\n')
+    .map((l) => l.trimEnd())
+    .filter(Boolean);
+  // 未提交改动（含 untracked）+ 本分支领先基线的提交，拼成一份待审 diff。
+  const headDiff = await gitRun(repoRoot, ['diff', 'HEAD', '--no-color']);
+  const untracked = status.filter((l) => l.startsWith('??')).map((l) => l.slice(3));
+  const numstatOut = await gitRun(repoRoot, ['diff', 'HEAD', '--numstat']);
+  const numstat = parseNumstat(numstatOut);
+  // merge-base 之后本分支自己的提交（origin/HEAD 或 upstream 不存在时跳过）
+  let base = null;
+  let baseDiff = '';
+  for (const candidate of ['@{upstream}', 'origin/main', 'origin/master', 'main', 'master']) {
+    const mergeBase = await gitRun(repoRoot, ['merge-base', 'HEAD', candidate]);
+    if (mergeBase) {
+      base = mergeBase.trim();
+      const ahead = await gitRun(repoRoot, ['rev-list', '--count', `${base}..HEAD`]);
+      if (ahead && Number(ahead.trim()) > 0) {
+        baseDiff = (await gitRun(repoRoot, ['diff', `${base}...HEAD`, '--no-color'])) ?? '';
+        const baseNumstat = parseNumstat(await gitRun(repoRoot, ['diff', `${base}...HEAD`, '--numstat']));
+        numstat.push(...baseNumstat);
+      }
+      break;
+    }
+  }
+  const diff = [headDiff, baseDiff].filter(Boolean).join('\n');
+  if (!diff.trim() && status.length === 0) {
+    return { available: true, source: 'git', diff: '', numstat, status, branch, base, empty: true };
+  }
+  return { available: true, source: 'git', diff, numstat, status, branch, base, untracked, empty: false };
+}
+
+/** 摘要行：分支、变更文件数、增删行合计、未跟踪文件。 */
+function summarizeTarget(target) {
+  if (!target.available) return '> ⚠️ 未检测到 git 仓库，且未粘贴 diff。请粘贴 unified diff 后重试，或给出要评审的文件路径。';
+  if (target.empty) return '> ✅ 当前分支无待评审变更（工作树干净，且没有领先基线的提交）。';
+  const adds = target.numstat.reduce((sum, f) => sum + (f.add ?? 0), 0);
+  const dels = target.numstat.reduce((sum, f) => sum + (f.del ?? 0), 0);
+  const files = new Set(target.numstat.map((f) => f.path));
+  const lines = [];
+  lines.push(`**评审目标**：${target.source}${target.branch ? `（分支 \`${target.branch}\`）` : ''}`);
+  lines.push(`- 变更文件 ${files.size || target.status.length} 个：+${adds} / -${dels} 行`);
+  if (target.base) lines.push(`- 对比基线：${target.base.slice(0, 12)}…（含已提交部分）`);
+  if (target.status.length) {
+    const shown = target.status.slice(0, 20);
+    lines.push(`- 工作树状态（${target.status.length} 条${target.status.length > 20 ? '，截断' : ''}）：`);
+    lines.push('```');
+    lines.push(...shown);
+    lines.push('```');
+  }
+  return lines.join('\n');
+}
+
+/** 三通道契约正文：每通道给闸门规则 + 按需加载的 references 路径。 */
+function renderReviewContract(stage, target, summary, focus, includeRefs) {
+  const parts = [];
+  parts.push(`# ${stage.title}`);
+  parts.push('');
+  parts.push(`**阶段目标**：${stage.goal}`);
+  parts.push('');
+  parts.push(summary);
+  parts.push('');
+  parts.push('## 三通道闸门流程（全部只读；评审永远不落手改代码）');
+  parts.push('');
+  parts.push('**通道 1 — 代码评审（必跑）**：按五轴（正确性/可维护性/可读性/测试/风险）独立过一遍变更，');
+  parts.push('每个候选问题按 0–100 评分，**只报 ≥80 的**。评分锚点、硬排除清单、先审后改接力纪律：');
+  parts.push('读 `references/review-gates.md` 全文后再写结论。');
+  parts.push('');
+  parts.push('**通道 2 — 安全变更审查（默认跑，`focus` 排除时跳过）**：只看本变更新引入的安全影响，');
+  parts.push('方法论按 `references/security-change-review.md`；每个候选过独立误报过滤');
+  parts.push('（`references/security-false-positive-filtering.md`），只报置信 ≥8/10 的。');
+  parts.push('⚠️ 该通道未加固提示注入：只用于你已信任的代码。');
+  parts.push('');
+  parts.push('**通道 3 — 专项镜头（可选，`focus` 指定时跑对应镜头）**：comments / tests / errors / types');
+  parts.push('四镜头，正文在 `references/review-lenses/<lens>-lens.md`，各镜头自带阈值，');
+  parts.push('镜头结论按其自身分级进入汇总，不冒充主闸门评分。');
+  parts.push('');
+  parts.push('**闸门纪律（硬规则）**：');
+  parts.push('1. 报告只含过闸发现：Critical（90–100）/ Important（80–89）；低于 80 的丢弃并说明查了什么。');
+  parts.push('2. 每条发现必须带证据引用（指南文件 / 代码位置 / 历史依据）与具体修复建议——建议写进报告，不落手。');
+  parts.push('3. "没有过闸发现"是合法完整结论，不许凑数。');
+  parts.push('4. 全部通道跑完、用户确认修复完发现之后，才允许进入简化（code-simplification 的行为等价改写）。');
+  parts.push('   先审后改的接力顺序见 `references/review-gates.md` 末节。');
+  parts.push('');
+  if (focus) {
+    parts.push(`**本次 focus**：${String(focus)}（对应通道按上述规则执行，其余通道跳过）。`);
+    parts.push('');
+  }
+  parts.push('## 步骤');
+  parts.push(stage.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'));
+  parts.push('');
+  parts.push('## 本阶段必须产出');
+  parts.push(stage.deliverables.map((d) => `- ${d}`).join('\n'));
+  parts.push('');
+  parts.push('## 退出标准（不满足不进入下一阶段）');
+  parts.push(stage.exit.map((e) => `- [ ] ${e}`).join('\n'));
+  parts.push('');
+  parts.push('## 评审报告模板');
+  parts.push('```markdown');
+  parts.push(stage.template.trimEnd());
+  parts.push('```');
+  if (includeRefs) {
+    parts.push('');
+    parts.push('## 随包方法论全文（按需读取）');
+    parts.push('- `forge_review({ refs: "gates" })` — 评分闸门与接力顺序（review-gates.md）');
+    parts.push('- `forge_review({ refs: "security" })` — 安全通道方法论（security-change-review.md）');
+    parts.push('- `forge_review({ refs: "security-filter" })` — 安全误报过滤全文');
+    parts.push('- `forge_review({ refs: "lens:errors" })` 等 — 四镜头全文（comment/test/error/type）');
+  }
+  parts.push('');
+  if (stage.next) {
+    const next = STAGE_BY_ID.get(stage.next);
+    parts.push(`**下一步**：\`${toolNameFor(stage.next)}\` — ${next.title}`);
+  } else {
+    parts.push('**流程结束**。交付后建议跑 `retro` 复盘，并把可复用经验写进项目文档。');
+  }
+  return parts.join('\n');
+}
+
+/** forge_review 的 execute：真实采集 + 契约渲染；refs 模式直接返回方法论全文。 */
+const REVIEW_STAGE = STAGE_BY_ID.get('review');
+async function reviewExecutor(args) {
+  // refs 模式：按名返回随包方法论全文（省得模型猜路径再读盘）。
+  const refs = args?.refs ? String(args.refs).trim() : undefined;
+  if (refs) {
+    const refMap = {
+      gates: 'review-gates.md',
+      security: 'security-change-review.md',
+      'security-filter': 'security-false-positive-filtering.md',
+      'lens:comment': 'review-lenses/comment-lens.md',
+      'lens:test': 'review-lenses/test-lens.md',
+      'lens:errors': 'review-lenses/error-lens.md',
+      'lens:type': 'review-lenses/type-lens.md',
+    };
+    const file = refMap[refs];
+    if (!file) {
+      return {
+        text: `未知 refs：${refs}。可用值：${Object.keys(refMap).join(', ')}。`,
+      };
+    }
+    return { text: await reviewReference(file) };
+  }
+
+  const root = resolve(args?.path ? String(args.path) : process.cwd());
+  const explicitDiff = args?.diff ? String(args.diff) : undefined;
+  const target = await collectReviewTarget(root, explicitDiff);
+  const summary = summarizeTarget(target);
+  const focus = args?.focus ? String(args.focus) : undefined;
+  const text = renderReviewContract(REVIEW_STAGE, target, summary, focus, true);
+  return { text };
+}
+
 function stageTool(stageId) {
   const stage = STAGE_BY_ID.get(stageId);
+  // forge_review 有专属 execute（真实 git 采集 + 三通道闸门契约），不走通用渲染。
+  if (stageId === 'review') {
+    return {
+      name: toolNameFor(stageId),
+      description: `mont-forge-pipeline 流水线·${stage.title}：${stage.goal} 产出 ${stage.deliverables.join('、')}；真实采集当前 git 变更并输出三通道评审契约（代码评审 80 分闸门 + 安全变更审查 8/10 闸门 + 可选专项镜头），满足退出标准后进入下一阶段。`,
+      parameters: {
+        type: 'object',
+        properties: {
+          note: {
+            type: 'string',
+            description: '本次要处理的输入：需求简述、规格路径、任务名或变更范围。可选。',
+          },
+          path: {
+            type: 'string',
+            description: '要评审的仓库根目录绝对路径。省略时用当前进程工作目录。',
+          },
+          diff: {
+            type: 'string',
+            description: '显式提供的 unified diff。提供时跳过 git 采集，直接评审这份 diff。',
+          },
+          focus: {
+            type: 'string',
+            description:
+              '只跑指定通道：code（代码评审）/ security（安全审查）/ lens:comment、lens:test、lens:errors、lens:type（专项镜头）。省略时跑通道 1+2。',
+          },
+          refs: {
+            type: 'string',
+            description:
+              '返回某份随包方法论全文而不执行评审：gates / security / security-filter / lens:comment / lens:test / lens:errors / lens:type。',
+          },
+        },
+        additionalProperties: false,
+      },
+      output: OUTPUT,
+      execute: reviewExecutor,
+    };
+  }
   return {
     name: toolNameFor(stageId),
     description: `mont-forge-pipeline 流水线·${stage.title}：${stage.goal} 产出 ${stage.deliverables.join('、')}；满足退出标准后进入下一阶段。`,

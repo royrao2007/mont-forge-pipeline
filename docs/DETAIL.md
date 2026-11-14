@@ -19,7 +19,7 @@ AI 编码代理的常见断层：**有技能没流程，或有流程没正文**�
 | 规格 → 计划 | `forge_plan` | 任务清单、阻塞边、关键路径、首个小切片 |
 | 实现 | `forge_build` | 可运行的小切片与对应测试 |
 | 验证 | `forge_verify` | 复现记录、根因、回归测试、验证证据 |
-| 评审 | `forge_review` | 五轴结论、分级问题清单、必修复项 |
+| 评审 | `forge_review` | 三通道闸门评审结论：代码评审（≥80）+ 安全审查（≥8/10）+ 可选镜头，分级问题清单、必修复项 |
 | 交付 | `forge_ship` | 提交历史、CI 结果、文档、监控、回滚预案 |
 
 辅助工具：
@@ -50,6 +50,7 @@ forge_assess → forge_spec → forge_plan → forge_build → forge_verify → 
 
 - 只修 bug：`forge_verify` → `forge_review`
 - 只做评审：`forge_review`
+- `forge_review({ refs: "gates" })` 取评分闸门全文；`forge_review({ focus: "security" })` 只跑安全通道
 - 不记得技能名：`forge_catalog`，再 `forge_skill` 取正文
 - 想知道项目现状：`forge_assess`
 
