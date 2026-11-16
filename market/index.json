@@ -1,93 +1,94 @@
 {
-    "format":  1,
-    "title":  {
-                  "en":  "mont-forge-pipeline",
-                  "zh":  "mont-forge-pipeline"
-              },
-    "description":  {
-                        "en":  "Engineering skills and a callable development pipeline for AI coding agents.",
-                        "zh":  "工程技能包与可调用的开发流水线，面向 AI 编码代理。"
-                    },
-    "metadata":  {
-                     "categories":  {
-                                        "skills":  {
-                                                       "title":  {
-                                                                     "en":  "Skills",
-                                                                     "zh":  "技能包"
-                                                                 }
-                                                   },
-                                        "productivity":  {
-                                                             "title":  {
-                                                                           "en":  "Productivity",
-                                                                           "zh":  "效率工具"
-                                                                       }
-                                                         }
-                                    },
-                     "labels":  {
-                                    "mont":  {
-                                                 "title":  {
-                                                               "en":  "Mont",
-                                                               "zh":  "Mont"
-                                                           }
-                                             }
-                                },
-                     "sortKeys":  {
-                                      "recent":  {
-                                                     "title":  {
-                                                                   "en":  "Recently updated",
-                                                                   "zh":  "最近更新"
-                                                               },
-                                                     "order":  "desc"
-                                                 }
-                                  }
-                 },
-    "plugins":  [
-                    {
-                        "name":  "mont-forge-pipeline",
-                        "title":  {
-                                      "en":  "mont-forge-pipeline",
-                                      "zh":  "mont-forge-pipeline"
-                                  },
-                        "description":  {
-                                            "en":  "45 production-grade engineering skills plus 9 callable lifecycle tools (spec, plan, build, verify, review, ship, plus assess, catalog, skill) for the full path from requirements to release. Merges addyosmani/agent-skills (25) and mattpocock/skills (19), both MIT.",
-                                            "zh":  "45 个生产级工程技能 + 9 个可调用工具（spec、plan、build、verify、review、ship，另有 assess、catalog、skill），覆盖从需求到发布的完整路径。合并自 addyosmani/agent-skills（25 个）与 mattpocock/skills（19 个），均 MIT。"
-                                        },
-                        "icon":  "https://raw.githubusercontent.com/royrao2007/mont-forge-pipeline/main/icon.svg",
-                        "author":  "mont",
-                        "homepage":  "https://github.com/royrao2007/mont-forge-pipeline",
-                        "repository":  {
-                                           "url":  "https://github.com/royrao2007/mont-forge-pipeline"
-                                       },
-                        "metadata":  {
-                                         "category":  "skills",
-                                         "keywords":  [
-                                                          "skills",
-                                                          "engineering",
-                                                          "spec",
-                                                          "tdd",
-                                                          "review",
-                                                          "security",
-                                                          "performance",
-                                                          "ci-cd",
-                                                          "pipeline",
-                                                          "agent-skills"
-                                                      ],
-                                         "labels":  [
-                                                        "mont"
-                                                    ],
-                                         "sortKeys":  {
-                                                          "recent":  1
-                                                      }
-                                     },
-                        "versions":  [
-                                         {
-                                             "version":  "0.5.0",
-                                             "publishTimestamp":  0,
-                                             "source":  {
-                                                            "type":  "npm"
-                                                        }
-                                     }
-                                 ]
-                    }
-                ]
+  "format": 1,
+  "title": {
+    "en": "mont-forge-pipeline",
+    "zh": "mont-forge-pipeline"
+  },
+  "description": {
+    "en": "Engineering skills and a callable development pipeline for AI coding agents.",
+    "zh": "工程技能包与可调用的开发流水线，面向 AI 编码代理。"
+  },
+  "metadata": {
+    "categories": {
+      "skills": {
+        "title": {
+          "en": "Skills",
+          "zh": "技能包"
+        }
+      },
+      "productivity": {
+        "title": {
+          "en": "Productivity",
+          "zh": "效率工具"
+        }
+      }
+    },
+    "labels": {
+      "mont": {
+        "title": {
+          "en": "Mont",
+          "zh": "Mont"
+        }
+      }
+    },
+    "sortKeys": {
+      "recent": {
+        "title": {
+          "en": "Recently updated",
+          "zh": "最近更新"
+        },
+        "order": "desc"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "mont-forge-pipeline",
+      "title": {
+        "en": "mont-forge-pipeline",
+        "zh": "mont-forge-pipeline"
+      },
+      "description": {
+        "en": "45 production-grade engineering skills plus 9 callable lifecycle tools (spec, plan, build, verify, review, ship, plus assess, catalog, skill) for the full path from requirements to release. Merges addyosmani/agent-skills (25) and mattpocock/skills (19), both MIT.",
+        "zh": "45 个生产级工程技能 + 9 个可调用工具（spec、plan、build、verify、review、ship，另有 assess、catalog、skill），覆盖从需求到发布的完整路径。合并自 addyosmani/agent-skills（25 个）与 mattpocock/skills（19 个），均 MIT。"
+      },
+      "icon": "https://raw.githubusercontent.com/royrao2007/mont-forge-pipeline/main/icon.svg",
+      "author": "mont",
+      "homepage": "https://github.com/royrao2007/mont-forge-pipeline",
+      "repository": {
+        "url": "https://github.com/royrao2007/mont-forge-pipeline"
+      },
+      "metadata": {
+        "category": "skills",
+        "keywords": [
+          "skills",
+          "engineering",
+          "spec",
+          "tdd",
+          "review",
+          "security",
+          "performance",
+          "ci-cd",
+          "pipeline",
+          "agent-skills"
+        ],
+        "labels": [
+          "mont"
+        ],
+        "sortKeys": {
+          "recent": 1
+        }
+      },
+      "versions": [
+        {
+          "version": "0.5.0",
+          "publishTimestamp": 0,
+          "source": {
+            "type": "npm"
+          }
+        }
+      ]
+    }
+  ],
+  "version": "0.5.1"
 }
