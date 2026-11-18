@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — 2026-11-18
+
+对齐 DSH 0.2.2-rc.5 的插件机制与版本要求。
+
+- 补齐 `engines` 字段：`node >=22.5.0`、`dsh >=0.2.2-rc.1 <0.3.0-0`。此前完全没有声明，插件管理器无法按 DSH 版本做安装与激活判定（`engines.dsh` 缺失时它退回用 DSH peer 依赖推断）。
+- `peerDependencies.@deepseek-ai/cordis` 下限由 `>=4.0.1` 收紧为 `>=4.1.0`，与当前 DSH 内置的 cordis 4.1.0 对齐。
+- 修正 `description` 里的工具数量（9 → 11），补上 standup 与 incident，与 `locale/*.json` 的文案一致。
+- 修正 `market/index.json` 里滞后的 npm 版本（0.5.0 → 0.5.1），与 registry 上实际发布的版本一致。
+
 ## 0.5.1 — 2026-11-17
 
 新增插件市场图标 `assets/icon-180.png`（白底蓝渐变标志），供 awesome-dsh-plugin 收录条目与市场卡片使用。
