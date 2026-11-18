@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 — 2026-11-19
+
+修复 0.6.0 已发布产物内的自建索引版本不一致。
+
+- 0.6.0 是在 `market/index.json` 尚未更新到 0.6.0 时发布的，导致 registry 上的 `mont-forge-pipeline-0.6.0.tgz` 里该文件仍声明 0.5.1；npm 包不可覆盖，故以 0.6.1 重新发布一个自洽的产物。
+- `market/index.json` 的根级 `version` 与 `plugins[].versions[]` 现均为 0.6.1，与 `package.json` 一致。
+
 ## 0.6.0 — 2026-11-18
 
 对齐 DSH 0.2.2-rc.5 的插件机制与版本要求。
